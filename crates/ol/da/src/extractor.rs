@@ -62,17 +62,11 @@ mod tests {
     use super::*;
     use crate::DaExtractorError;
 
-    /// Magic bytes for testing purposes.
-    const TEST_MAGIC_BYTES: MagicBytes = MagicBytes::new(*b"ALPN");
-
     /// Creates a checkpoint transaction with the given payload, subprotocol, tx type, and secret
     /// key.
     fn make_checkpoint_tx(payload: &[u8], subprotocol: u8, tx_type: u8) -> Transaction {
         let tag_data = TagDataRef::new(subprotocol, tx_type, &[]).expect("build tag");
-        let tag_script = ParseConfig::new(TEST_MAGIC_BYTES)
-            .encode_script_buf(&tag_data)
-            .expect("encode tag script");
-        create_reveal_transaction_stub(payload.to_vec(), tag_script.into_bytes())
+        create_reveal_transaction_stub(payload.to_vec(), tag_data.to_owned())
     }
 
     /// Extracts the leaf script from a transaction.

@@ -10,6 +10,7 @@ workspace = true
 strata-asm-manifest-types.workspace = true
 strata-asm-types.workspace = true
 strata-btc-types.workspace = true
+strata-l1-envelope-fmt = { workspace = true, optional = true }
 strata-l1-txfmt.workspace = true
 strata-merkle.workspace = true
 strata-msg-fmt.workspace = true
@@ -26,4 +27,4 @@ strata-identifiers.workspace = true
 strata-test-utils.workspace = true
 
 [features]
-test-utils = ["dep:rand"]
+test-utils = ["dep:rand", "dep:strata-l1-envelope-fmt"]
