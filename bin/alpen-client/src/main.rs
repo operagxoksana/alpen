@@ -10,6 +10,7 @@ mod noop_prover;
 mod ol_client;
 #[cfg(feature = "sequencer")]
 mod payload_builder;
+mod rpc;
 mod rpc_client;
 
 use std::{env, process, sync::Arc};
@@ -258,6 +259,13 @@ fn main() {
                 sequencer_http: ext.sequencer_http.clone(),
             };
 
+            let consensus_watcher = ol_tracker.consensus_watcher();
+            let status_watcher = ol_tracker.ol_status_watcher();
+
+            // Create shared reference for exec chain handle (will be set later for sequencer)
+            let exec_chain_handle_ref = Arc::new(tokio::sync::RwLock::new(None));
+            let exec_chain_handle_ref_clone = exec_chain_handle_ref.clone();
+
             let node_builder = builder
                 .node(AlpenEthereumNode::new(node_args))
                 // Register Alpen gossip RLPx subprotocol
@@ -272,6 +280,24 @@ fn main() {
                             .network
                             .add_rlpx_sub_protocol(handler.into_rlpx_sub_protocol());
                         info!(target: "alpen-gossip", "Registered Alpen gossip RLPx subprotocol");
+                        Ok(())
+                    }
+                })
+                // Add custom RPC modules including status endpoints
+                .extend_rpc_modules({
+                    move |ctx| {
+                        use rpc::{AlpenClientStatusApiServer, AlpenClientStatusRpc};
+
+                        // Create status RPC with available handles
+                        // ExecChainHandle will be set later for sequencer mode
+                        let status_rpc = AlpenClientStatusRpc::new(
+                            Some(ol_tracker),
+                            exec_chain_handle_ref_clone,
+                        );
+
+                        // Register the status RPC endpoints
+                        ctx.modules.merge_configured(status_rpc.into_rpc())?;
+
                         Ok(())
                     }
                 });
@@ -302,7 +328,7 @@ fn main() {
 
             let engine_control_task = create_engine_control_task(
                 preconf_rx.clone(),
-                ol_tracker.consensus_watcher(),
+                consensus_watcher.clone(),
                 node.provider.clone(),
                 AlpenRethExecEngine::new(node.beacon_engine_handle.clone()),
             );
@@ -339,9 +365,12 @@ fn main() {
                 let (exec_chain_handle, exec_chain_task) =
                     build_exec_chain_task(exec_chain_state, preconf_tx.clone(), storage.clone());
 
+                // Update the shared reference with the actual exec chain handle
+                *exec_chain_handle_ref.write().await = Some(exec_chain_handle.clone());
+
                 let (ol_chain_tracker, ol_chain_tracker_task) = build_ol_chain_tracker(
                     ol_chain_tracker_state,
-                    ol_tracker.ol_status_watcher(),
+                    status_watcher.clone(),
                     ol_client.clone(),
                     storage.clone(),
                 );
@@ -378,7 +407,7 @@ fn main() {
                     storage.clone(),
                     batch_prover,
                     batch_lifecycle_handle.latest_proof_ready_watcher(),
-                    ol_tracker.ol_status_watcher(),
+                    status_watcher,
                 );
 
                 node.task_executor
@@ -387,7 +416,7 @@ fn main() {
                     "exec_chain_consensus_forwarder",
                     build_exec_chain_consensus_forwarder_task(
                         exec_chain_handle.clone(),
-                        ol_tracker.consensus_watcher(),
+                        consensus_watcher,
                     ),
                 );
                 node.task_executor

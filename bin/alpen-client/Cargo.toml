@@ -9,7 +9,6 @@ workspace = true
 [features]
 default = ["sequencer"]
 sequencer = [
-  "dep:alpen-ee-exec-chain",
   "dep:alpen-ee-sequencer",
   "dep:alpen-reth-evm",
   "dep:alloy-eips",
@@ -28,7 +27,7 @@ alpen-ee-common.workspace = true
 alpen-ee-config.workspace = true
 alpen-ee-database.workspace = true
 alpen-ee-engine.workspace = true
-alpen-ee-exec-chain = { workspace = true, optional = true }
+alpen-ee-exec-chain.workspace = true
 alpen-ee-genesis.workspace = true
 alpen-ee-ol-tracker.workspace = true
 alpen-ee-sequencer = { workspace = true, optional = true }
@@ -50,7 +49,7 @@ async-trait.workspace = true
 bitcoin = { workspace = true, optional = true }
 clap.workspace = true
 eyre.workspace = true
-jsonrpsee = { workspace = true, features = ["http-client"] }
+jsonrpsee = { workspace = true, features = ["http-client", "server", "macros"] }
 reth-chainspec.workspace = true
 reth-cli-commands.workspace = true
 reth-cli-runner.workspace = true
@@ -63,7 +62,9 @@ reth-node-core.workspace = true
 reth-payload-builder = { workspace = true, optional = true }
 reth-primitives.workspace = true
 reth-provider.workspace = true
+serde.workspace = true
 ssz.workspace = true
+strata-rpc-utils.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 
