@@ -75,7 +75,7 @@ class AlpenClientFactory(flexitest.Factory):
         """
         ctx: flexitest.EnvContext = kwargs["ctx"]
 
-        datadir = Path(ctx.make_service_dir("alpen_client_sequencer"))
+        datadir = Path(ctx.make_service_dir("ee_sequencer"))
         http_port = self.next_port()
         p2p_port = self.next_port()
         authrpc_port = self.next_port()
@@ -147,7 +147,7 @@ class AlpenClientFactory(flexitest.Factory):
             props,
             cmd,
             stdout=str(logfile),
-            name="alpen_client_sequencer",
+            name="ee_sequencer",
             env=env,
         )
         svc.stop_timeout = 30
@@ -194,7 +194,7 @@ class AlpenClientFactory(flexitest.Factory):
             datadir.mkdir(parents=True, exist_ok=True)
         else:
             ctx: flexitest.EnvContext = kwargs["ctx"]
-            datadir = Path(ctx.make_service_dir(f"alpen_client_fullnode_{instance_id}"))
+            datadir = Path(ctx.make_service_dir(f"ee_fullnode_{instance_id}"))
         http_port = self.next_port()
         p2p_port = self.next_port()
         authrpc_port = self.next_port()
@@ -273,7 +273,7 @@ class AlpenClientFactory(flexitest.Factory):
             props,
             cmd,
             stdout=str(logfile),
-            name=f"alpen_client_fullnode_{instance_id}",
+            name=f"ee_fullnode_{instance_id}",
         )
         svc.stop_timeout = 30
 
