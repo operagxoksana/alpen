@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 
+from envconfigs.el_ol import EeOLEnv
 import flexitest
 from flexitest.runtime import load_candidate_modules, scan_dir_for_modules
 
@@ -246,6 +247,8 @@ def main(argv: list[str]) -> int:
             pure_discovery=True,
             mesh_bootnodes=True,
         ),
+        # Environments containing both ee and ol
+        "ee_ol": EeOLEnv(pre_generate_blocks=110),
     }
 
     # Set up test runtime

@@ -41,6 +41,23 @@ class AlpenClientEnv(flexitest.EnvConfig):
             raise ValueError("mesh_bootnodes requires enable_discovery=True")
 
     def init(self, ectx: flexitest.EnvContext) -> flexitest.LiveEnv:
+        services = self.get_services(
+            ectx,
+            self.enable_discovery,
+            self.fullnode_count,
+            self.mesh_bootnodes,
+            self.pure_discovery,
+        )
+        return flexitest.LiveEnv(services)
+
+    @staticmethod
+    def get_services(
+        ectx: flexitest.EnvContext,
+        enable_discovery: bool,
+        fullnode_count: int,
+        mesh_bootnodes: int,
+        pure_discovery: bool,
+    ):
         factory = cast(AlpenClientFactory, ectx.get_factory(ServiceType.AlpenClient))
         privkey, pubkey = generate_sequencer_keypair()
 
@@ -48,30 +65,30 @@ class AlpenClientEnv(flexitest.EnvConfig):
         sequencer = factory.create_sequencer(
             sequencer_pubkey=pubkey,
             sequencer_privkey=privkey,
-            enable_discovery=self.enable_discovery,
+            enable_discovery=enable_discovery,
         )
         sequencer.wait_for_ready(timeout=60)
         seq_enode = sequencer.get_enode()
         seq_http_url = sequencer.props["http_url"]
 
-        services = {"sequencer": sequencer}
+        services = {"alpen_sequencer": sequencer}
         fullnodes = []
         fn_enodes = []  # Track fullnode enodes for mesh bootnodes
 
         # Start fullnodes
-        for i in range(self.fullnode_count):
+        for i in range(fullnode_count):
             # Build bootnode list
             bootnodes = None
-            if self.enable_discovery:
+            if enable_discovery:
                 bootnodes = [seq_enode]
                 # Add previous fullnodes as bootnodes for mesh formation
-                if self.mesh_bootnodes:
+                if mesh_bootnodes:
                     bootnodes.extend(fn_enodes)
 
             fullnode = factory.create_fullnode(
                 sequencer_pubkey=pubkey,
                 bootnodes=bootnodes,
-                enable_discovery=self.enable_discovery,
+                enable_discovery=enable_discovery,
                 instance_id=i,
                 sequencer_http=seq_http_url,  # Forward transactions to sequencer
             )
@@ -79,18 +96,17 @@ class AlpenClientEnv(flexitest.EnvConfig):
             fullnodes.append(fullnode)
 
             # Track enode for mesh bootnodes
-            if self.mesh_bootnodes:
+            if mesh_bootnodes:
                 fn_enodes.append(fullnode.get_enode())
 
             # Use "fullnode" for single, "fullnode_N" for multiple
-            key = "fullnode" if self.fullnode_count == 1 else f"fullnode_{i}"
+            key = "alpen_fullnode" if fullnode_count == 1 else f"alpen_fullnode_{i}"
             services[key] = fullnode
 
         # Connect fullnodes to sequencer via admin_addPeer (unless pure_discovery mode)
-        if not self.pure_discovery:
+        if not pure_discovery:
             seq_rpc = sequencer.create_rpc()
             for fn in fullnodes:
                 fn_enode = fn.get_enode()
                 seq_rpc.admin_addPeer(fn_enode)
-
-        return flexitest.LiveEnv(services)
+        return services
