@@ -70,6 +70,7 @@ class StrataFactory(flexitest.Factory):
         genesis_l1: GenesisL1View,
         is_sequencer: bool = True,
         config_overrides: dict | None = None,
+        ol_params: OLParams | None = None,
         **kwargs,
     ) -> StrataService:
         """
@@ -79,6 +80,7 @@ class StrataFactory(flexitest.Factory):
             bconfig: Bitcoin daemon configuration
             is_sequencer: True for sequencer, False for fullnode
             config_overrides: Additional config overrides (-o flag)
+            ol_params: Custom OL parameters (genesis accounts, etc.)
         """
         # Ensured by `with_ectx` decorator. Don't like this though.
         ctx: flexitest.EnvContext = kwargs["ctx"]
@@ -106,8 +108,9 @@ class StrataFactory(flexitest.Factory):
         with open(params_path, "w") as f:
             f.write(params.as_json_string())
 
-        # Create OL params
-        ol_params = OLParams().with_genesis_l1(genesis_l1)
+        # Create OL params (use provided or create default)
+        if ol_params is None:
+            ol_params = OLParams().with_genesis_l1(genesis_l1)
         ol_params_path = datadir / "ol-params.json"
         with open(ol_params_path, "w") as f:
             f.write(ol_params.as_json_string())
