@@ -61,6 +61,7 @@ class AlpenClientFactory(flexitest.Factory):
         p2p_secret_key: str | None = None,
         enable_discovery: bool = False,
         custom_chain: str = "dev",
+        ol_endpoint: str | None = None,
         **kwargs,
     ) -> AlpenClientService:
         """
@@ -91,13 +92,15 @@ class AlpenClientFactory(flexitest.Factory):
         key_hex = p2p_secret_key.removeprefix("0x")
         p2p_secret_key_file.write_text(key_hex)
 
+        ol_client_args = ["--ol-client-url", ol_endpoint] if ol_endpoint else ["--dummy-ol-client"]
+
         # fmt: off
         cmd = [
             "alpen-client",
             "--datadir", str(datadir),
             "--sequencer",
             "--sequencer-pubkey", sequencer_pubkey,
-            "--dummy-ol-client",  # Use DummyOLClient (no real OL connection needed)
+            *ol_client_args,
             "--addr", "127.0.0.1",  # Force IPv4 for testing
             "--nat", "extip:127.0.0.1",  # Force enode to show 127.0.0.1
             "--port", str(p2p_port),
@@ -173,6 +176,7 @@ class AlpenClientFactory(flexitest.Factory):
         instance_id: int = 0,
         datadir_override: str | None = None,
         sequencer_http: str | None = None,
+        ol_endpoint: str | None = None,
         **kwargs,
     ) -> AlpenClientService:
         """
@@ -210,12 +214,13 @@ class AlpenClientFactory(flexitest.Factory):
         key_hex = p2p_secret_key.removeprefix("0x")
         p2p_secret_key_file.write_text(key_hex)
 
+        ol_client_args = ["--ol-client-url", ol_endpoint] if ol_endpoint else ["--dummy-ol-client"]
         # fmt: off
         cmd = [
             "alpen-client",
             "--datadir", str(datadir),
             "--sequencer-pubkey", sequencer_pubkey,
-            "--dummy-ol-client",  # Use DummyOLClient (no real OL connection needed)
+            *ol_client_args,
             "--addr", "127.0.0.1",  # Force IPv4 for testing
             "--nat", "extip:127.0.0.1",  # Force enode to show 127.0.0.1
             "--port", str(p2p_port),
